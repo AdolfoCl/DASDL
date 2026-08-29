@@ -1,0 +1,12 @@
+% Manual 8600 0213-424, Section 3, Example 2.
+% The same data set reached two ways, by name and by employee number.
+
+PERSONNEL DATA SET
+ (
+   NAME        ALPHA(30);
+   EMPLOYEE-NO NUMBER(6);
+   DEPARTMENT  ALPHA(20);
+   PHONE       NUMBER(10);
+ );
+FIND-BY-NAME   SET OF PERSONNEL KEY IS NAME;
+FIND-BY-NUMBER SET OF PERSONNEL KEY IS EMPLOYEE-NO;

@@ -1,0 +1,6 @@
+# Build output: the binary, and what compiling a description writes.
+build/dasdl
+build/*.model.json
+build/*.sql
+*.o
+.DS_Store

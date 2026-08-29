@@ -1,0 +1,453 @@
+% DASDL semantics — the Trackway configuration, and the code each numbered
+% station of a diagram in dasdl.graph runs when the parser reaches it.
+%
+% A comment written above a block explains that block and travels with it.
+%
+
+ GENERAL SECTION:
+
+     TOKENS   :    BADTOK    "<INVALID TOKEN>"
+                  ,IDNTOK    "<IDENTIFIER>"
+                  ,RESTOK    "<RESERVED WORD>"    (DEFAULT)
+                  ,NUMTOK    "<NUMBER>"
+                  ,INTTOK    "<INTEGER>"
+                  ,STRTOK    "<STRING>"
+                  ,CHRTOK    "<SPECIAL CHAR>"          (CHR)
+                  ,TXTTOK    "<TEXT>"
+                  ,ETXTOK    "<END OF TEXT>"
+
+    ;SOURCE   :    'dasdl.cpp'
+    ;INITIAL  :    'INITIALIZE'
+    ;FINAL    :    'PROCESS'
+    ;GLOBALS  :    INCLUDE '../properties/properties.hpp'
+    ;LANGUAGE TOKENS LIKE: COBOL
+    ;OUTPUT LANGUAGE: CPP
+    .
+
+
+@@BEGIN_SEM <ROOT>@@
+'1': {'C': {'text': 'model.endDeclaration();'}}
+@@END_SEM@@
+
+@@BEGIN_SEM <MODEL OPTION>@@
+'1': {'C': {'text': ['model.setModelName(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <UPDATE OPTION>@@
+'1': {'C': {'text': ['model.markUpdate();']}},
+'2': {'C': {'text': ['model.setUpdateName(token.value);']}}
+@@END_SEM@@
+
+% Every branch opens the same code file entry; which one it was is the word
+% itself, so the nine stations say the same thing.
+@@BEGIN_SEM <CODE FILE NAME>@@
+'1': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'2': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'3': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'4': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'5': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'6': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'7': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'8': {'C': {'text': ['model.beginCodeFile(token.value);']}},
+'9': {'C': {'text': ['model.beginCodeFile(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <USERCODE>@@
+'1': {'C': {'text': ['model.setUsercode(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <FILE NAME>@@
+'1': {'C': {'text': ['model.addTitleNode(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ON FAMILY>@@
+'1': {'C': {'text': ['model.setFamily(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <CONTROL FILE SPECIFICATION>@@
+'1': {'C': {'text': ['model.beginControlFile();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <AUDIT TRAIL SPECIFICATION>@@
+'1': {'C': {'text': ['model.beginAuditTrail();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DEFAULTS SPECIFICATION>@@
+'1': {'C': {'text': ['model.beginDefaults();']}}
+@@END_SEM@@
+
+% The kind is only noted here; the '(' of the physical option list that has to
+% follow is what opens the block. <DATA SET WORD> notes itself, because the
+% same three spellings also name a data set outside DEFAULTS.
+@@BEGIN_SEM <STRUCTURE DEFAULT KIND>@@
+'1': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'2': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'3': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'4': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'5': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'6': {'C': {'text': ['model.noteDefaultKind(token.value);']}},
+'7': {'C': {'text': ['model.noteDefaultKind(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <STRUCTURE DECLARATION>@@
+'1': {'C': {'text': ['model.beginEntry(token.value, token.line);']}},
+'2': {'C': {'text': ['model.setComment(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <STRUCTURE BODY>@@
+'1': {'C': {'text': ['model.setKind("of");']}},
+'2': {'C': {'text': ['model.setTarget(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DATA SET KIND>@@
+'1': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'2': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'3': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'4': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'5': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'6': {'C': {'text': ['model.setDatasetKind(token.value);']}},
+'7': {'C': {'text': ['model.setDatasetKind(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DATA SET WORD>@@
+'1': {'C': {'text': ['model.noteDataSetWord();']}},
+'2': {'C': {'text': ['model.noteDataSetWord();']}},
+'3': {'C': {'text': ['model.noteDataSetWord();']}}
+@@END_SEM@@
+
+% The two parentheses are what nests the model: everything between them belongs
+% to the entry just named, and that entry becomes current again on the way out —
+% which is what lets `G GROUP (...) REQUIRED` land its attribute on the group
+% rather than on the last item inside it.
+@@BEGIN_SEM <RECORD DESCRIPTION>@@
+'1': {'C': {'text': ['model.openScope();']}},
+'2': {'C': {'text': ['model.closeScope();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <RECORD ENTRY>@@
+'1': {'C': {'text': ['model.beginFiller(token.line);']}},
+'2': {'C': {'text': ['model.setFillerSize(token.intValue);']}},
+'3': {'C': {'text': ['model.beginEntry(token.value, token.line);']}},
+'4': {'C': {'text': ['model.setComment(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <RENAME>@@
+'1': {'C': {'text': ['model.setRename(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ALPHA ITEM>@@
+'1': {'C': {'text': ['model.setItemType("alpha");']}},
+'2': {'C': {'text': ['model.setSize(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <NUMBER ITEM>@@
+'1': {'C': {'text': ['model.setItemType("number");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <REAL ITEM>@@
+'1': {'C': {'text': ['model.setItemType("real");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <NUMERIC SIZE>@@
+'1': {'C': {'text': ['model.setSize(token.intValue);']}},
+'2': {'C': {'text': ['model.setSignedSize(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SCALE FACTOR>@@
+'1': {'C': {'text': ['model.setScale(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <BOOLEAN ITEM>@@
+'1': {'C': {'text': ['model.setItemType("boolean");']}}
+@@END_SEM@@
+
+% The parentheses nest the same way a record description's do, so the Boolean
+% items of the second form become the field's children. In the first form —
+% FIELD(15) — the scope opens and closes with nothing in it, and the width
+% lands on the field itself.
+@@BEGIN_SEM <FIELD ITEM>@@
+'1': {'C': {'text': ['model.setItemType("field");']}},
+'2': {'C': {'text': ['model.openScope();']}},
+'3': {'C': {'text': ['model.closeScope();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <FIELD BODY>@@
+'1': {'C': {'text': ['model.setSize(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <GROUP ITEM>@@
+'1': {'C': {'text': ['model.setItemType("group");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <POPULATION ITEM>@@
+'1': {'C': {'text': ['model.setItemType("population");']}},
+'2': {'C': {'text': ['model.setSize(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <COUNT ITEM>@@
+'1': {'C': {'text': ['model.setItemType("count");']}},
+'2': {'C': {'text': ['model.setSize(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <OF STRUCTURE>@@
+'1': {'C': {'text': ['model.setTarget(token.value);']}}
+@@END_SEM@@
+
+% NULL and INITIALVALUE share <ITEM VALUE>, so the clause that opened says
+% which of the two the value that follows belongs to.
+@@BEGIN_SEM <ITEM ATTRIBUTE>@@
+'1': {'C': {'text': ['model.markRequired();']}},
+'2': {'C': {'text': ['model.markReadOnly();']}},
+'3': {'C': {'text': ['model.expectNullValue();']}},
+'4': {'C': {'text': ['model.expectInitialValue();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ITEM VALUE>@@
+'1': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'2': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'3': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'4': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'5': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'6': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'7': {'C': {'text': ['model.setPendingValue(token.value);']}},
+'8': {'C': {'text': ['model.setPendingValue(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <OCCURS CLAUSE>@@
+'1': {'C': {'text': ['model.setOccurs(token.intValue);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DEPENDING ON>@@
+'1': {'C': {'text': ['model.setDepending(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SET DECLARATION>@@
+'1': {'C': {'text': ['model.setKind("set");']}},
+'2': {'C': {'text': ['model.setTarget(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SUBSET DECLARATION>@@
+'1': {'C': {'text': ['model.setKind("subset");']}},
+'2': {'C': {'text': ['model.setTarget(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ACCESS DECLARATION>@@
+'1': {'C': {'text': ['model.setKind("access");']}},
+'2': {'C': {'text': ['model.setTarget(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SET TYPE>@@
+'1': {'C': {'text': ['model.setSetType("BIT VECTOR");']}},
+'2': {'C': {'text': ['model.setSetType("LIST");']}},
+'3': {'C': {'text': ['model.setSetType("UNORDERED LIST");']}}
+@@END_SEM@@
+
+% NO DUPLICATES is drawn as its own branch rather than as an optional NO in
+% front of the word. A branch has to commit on its first station, so an
+% optional one there is not optional at all: it becomes the test that picks the
+% branch, and a plain DUPLICATES fell past it to <ATTRIBUTE> — read as a
+% physical option named DUPLICATES rather than as the option that says a key
+% may repeat.
+%
+% I-R, I-S and O-L are the abbreviations the manual gives for the same three
+% organisations spelled out above them, so both spellings reach the model as
+% one word. DATA(...) reuses the key item list, which is why it says so first
+% and takes it back at the closing parenthesis.
+@@BEGIN_SEM <SET OPTION>@@
+'1': {'C': {'text': ['model.setDuplicates(true);']}},
+'2': {'C': {'text': ['model.noteNo();']}},
+'3': {'C': {'text': ['model.noteDuplicates();']}},
+'4': {'C': {'text': ['model.setSetType("INDEX");']}},
+'5': {'C': {'text': ['model.setSetType("INDEX " + dasdl_model::toUpper(token.value));']}},
+'6': {'C': {'text': ['model.setSetType("ORDERED LIST");']}},
+'7': {'C': {'text': ['model.setSetType("INDEX RANDOM");']}},
+'8': {'C': {'text': ['model.setSetType("INDEX SEQUENTIAL");']}},
+'9': {'C': {'text': ['model.setSetType("ORDERED LIST");']}},
+'10': {'C': {'text': ['model.beginDataItems();']}},
+'11': {'C': {'text': ['model.endDataItems();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DUPLICATES OPTION>@@
+'1': {'C': {'text': ['model.setDuplicatesOption(token.value);']}},
+'2': {'C': {'text': ['model.setDuplicatesOption(token.value);']}},
+'3': {'C': {'text': ['model.setDuplicatesOption(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <KEY SPEC>@@
+'1': {'C': {'text': ['model.addKey(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <KEY ITEM>@@
+'1': {'C': {'text': ['model.addKey(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <KEY ORDER>@@
+'1': {'C': {'text': ['model.setKeyOrder(token.value);']}},
+'2': {'C': {'text': ['model.setKeyOrder(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <OPTIONS SPECIFICATION>@@
+'1': {'C': {'text': ['model.beginOptions();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <PARAMETERS SPECIFICATION>@@
+'1': {'C': {'text': ['model.beginParameters();']}}
+@@END_SEM@@
+
+% Where the attributes go is decided at the '(': inside DEFAULTS it opens the
+% per-structure block the kind word announced, and everywhere else they belong
+% to the structure being declared — a list with no other body being what makes
+% `PERSONNEL (KIND = PACK)` a physical specification for a structure declared
+% further up rather than a structure of its own.
+@@BEGIN_SEM <PHYSICAL OPTIONS>@@
+'1': {'C': {'text': ['model.openPhysicalOptions();']}},
+'2': {'C': {'text': ['model.closePhysicalOptions();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ATTRIBUTE>@@
+'1': {'C': {'text': ['model.beginAttribute(token.value, token.line);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <VALUE EXPRESSION>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'2': {'C': {'text': ['model.addAttributeString(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <NUMERIC VALUE>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <NUMERIC QUALIFIER>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'2': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'3': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'4': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'5': {'C': {'text': ['model.addAttributeValue("(" + token.value + ")");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <PER CLAUSE>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'2': {'C': {'text': ['model.addAttributeValue(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <BUFFER KIND>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'2': {'C': {'text': ['model.addAttributeValue(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <UNIT>@@
+'1': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'2': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'3': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'4': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'5': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'6': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'7': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'8': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'9': {'C': {'text': ['model.addAttributeValue(token.value);']}},
+'10': {'C': {'text': ['model.addAttributeValue(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <WHERE CONDITION>@@
+'1': {'C': {'text': ['model.beginWhere();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <BOOLEAN TAIL>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <NEGATION>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}},
+'2': {'C': {'text': ['model.addExprToken(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <BOOLEAN PRIMARY>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}},
+'2': {'C': {'text': ['model.addExprToken(token.value);']}},
+'3': {'C': {'text': ['model.addExprToken("(");']}},
+'4': {'C': {'text': ['model.addExprToken(")");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <OPERAND PRIMARY>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}},
+'2': {'C': {'text': ['model.addExprToken(token.value);']}},
+'3': {'C': {'text': ['model.addExprToken(token.value);']}},
+'4': {'C': {'text': ['model.addExprString(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <ARITHMETIC OPERATOR>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}},
+'2': {'C': {'text': ['model.addExprToken(token.value);']}},
+'3': {'C': {'text': ['model.addExprToken(token.value);']}},
+'4': {'C': {'text': ['model.addExprToken(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <RELATIONAL OPERATOR>@@
+'1': {'C': {'text': ['model.addExprToken(token.value);']}},
+'2': {'C': {'text': ['model.addExprToken(token.value);']}},
+'3': {'C': {'text': ['model.addExprToken(token.value);']}},
+'4': {'C': {'text': ['model.addExprToken(token.value);']}},
+'5': {'C': {'text': ['model.addExprToken(token.value);']}},
+'6': {'C': {'text': ['model.addExprToken(token.value);']}},
+'7': {'C': {'text': ['model.addExprToken(token.value);']}},
+'8': {'C': {'text': ['model.addExprToken(token.value);']}},
+'9': {'C': {'text': ['model.addExprToken(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <REMAP DECLARATION>@@
+'1': {'C': {'text': ['model.setKind("remap");']}},
+'2': {'C': {'text': ['model.setTarget(token.value);']}},
+'3': {'C': {'text': ['model.setComment(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <VIRTUAL DECLARATION>@@
+'1': {'C': {'text': ['model.markVirtual();']}},
+'2': {'C': {'text': ['model.setComment(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <VIRTUAL VALUE>@@
+'1': {'C': {'text': ['model.beginVirtual();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <VARIABLE-FORMAT RECORD>@@
+'1': {'C': {'text': ['model.beginFormat(token.intValue, token.line);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SELECT VERIFY>@@
+'1': {'C': {'text': ['model.beginSelectOrVerify(token.value);']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <LOGICAL DATABASE DECLARATION>@@
+'1': {'C': {'text': ['model.openScope();']}},
+'2': {'C': {'text': ['model.closeScope();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <DATABASE WORD>@@
+'1': {'C': {'text': ['model.setKind("logical-database");']}},
+'2': {'C': {'text': ['model.setKind("logical-database");']}}
+@@END_SEM@@
+
+% The title is collected the same way a code file's is, and handed to the
+% logical database when the declaration ends — there is no token after it to
+% hang the handover on.
+@@BEGIN_SEM <LOGICAL DATABASE OPTION>@@
+'1': {'C': {'text': ['model.beginGuardFile();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <STRUCTURE LIST ENTRY>@@
+'1': {'C': {'text': ['model.beginEntry(token.value, token.line);',
+                     'model.setKind("ldb-entry");']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SET PART>@@
+'1': {'C': {'text': ['model.openScope();']}},
+'2': {'C': {'text': ['model.setSetsMode("ALL");']}},
+'3': {'C': {'text': ['model.setSetsMode("NONE");']}},
+'4': {'C': {'text': ['model.setSetsMode("LIST");']}},
+'5': {'C': {'text': ['model.closeScope();']}}
+@@END_SEM@@
+
+@@BEGIN_SEM <SET LIST ENTRY>@@
+'1': {'C': {'text': ['model.beginEntry(token.value, token.line);',
+                     'model.setKind("ldb-set");']}}
+@@END_SEM@@

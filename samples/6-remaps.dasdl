@@ -1,0 +1,103 @@
+% Remaps — Section 12 of 8600 0213-424.
+%
+% The declarations are the manual's own: the remap of page 12-4, the CUSTOMER
+% regrouping of page 12-30, and one virtual item of each kind from the virtual
+% item pages that follow. A remap redescribes a data set record — reordering,
+% renaming, hiding or adding to what the data set declares — and is reached
+% from a program only through a logical database (see 7-logical-database.dasdl).
+
+D DATA SET
+ (
+   A ALPHA(5);
+   B BOOLEAN;
+   F FIELD(15);
+   G GROUP
+    (
+      G1 ALPHA(2);
+      G2 REAL;
+    );
+   N NUMBER(S5,2);
+   P REAL(S6);
+ );
+
+% Items reordered, one omitted, one hidden, one read only, two given initial
+% values, and a select/verify pair over the record.
+
+R REMAPS D
+ (
+   A ALPHA(5);
+   F;
+   B BOOLEAN INITIALVALUE TRUE;
+   G GROUP
+    (
+      G1 ALPHA(2) HIDDEN;
+      G2 REAL READONLY;
+    );
+   N NUMBER(S5,2) INITIALVALUE 1.0, REQUIRED;
+ )
+   SELECT N GEQ 1.0,
+   VERIFY N GEQ 1.0;
+
+% A regrouping: NEW-CUST-INFO exists in the remap only, so it may hold a group
+% that is not nested that way in the data set.
+
+CUST DATA SET
+ (
+   NAME         ALPHA(20);
+   BILLING-ADDR GROUP
+    (
+      STREET ALPHA(20);
+      CITY   ALPHA(15);
+      ZIP    NUMBER(9);
+    );
+   CUST-INFO GROUP
+    (
+      CONTRACT-NO NUMBER(9);
+      LIAISON     ALPHA(20);
+      PHONE       ALPHA(10);
+    );
+ );
+
+CUSTOMER REMAPS CUST
+ (
+   NAME ALPHA(20);
+   NEW-CUST-INFO GROUP
+    (
+      CONTRACT-NO NUMBER(9);
+      LIAISON     ALPHA(20);
+      PHONE       ALPHA(10);
+      BILLING-ADDR GROUP
+       (
+         STREET ALPHA(20);
+         CITY   ALPHA(15);
+         ZIP    NUMBER(9);
+       );
+    );
+ );
+
+% Virtual items exist in the remap and not in the record: their value is
+% computed on retrieval, or held only for the life of the work area.
+
+EMP DATA SET
+ (
+   RSN-ITEM   NUMBER(4);
+   LAST-NAME  ALPHA(20);
+   FIRST-NAME ALPHA(15);
+   SALARY     REAL;
+   HOURLY     BOOLEAN;
+ );
+
+EMP-VIEW REMAPS EMP
+ (
+   RSN-ITEM;
+   LAST-NAME;
+   FIRST-NAME;
+   INITIALS  VIRTUAL ALPHA(2);
+   DOUBLED   VIRTUAL NUMBER(8) = 2*RSN-ITEM;
+   SALARIED  VIRTUAL BOOLEAN = NOT HOURLY;
+   FLAGS     VIRTUAL FIELD(3);
+   NAME-PART VIRTUAL GROUP
+    (
+      SHORT-NAME VIRTUAL ALPHA(8) = LAST-NAME;
+    );
+ );

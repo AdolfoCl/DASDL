@@ -1,0 +1,68 @@
+% Subsets and the key data option — Section 11 of 8600 0213-424.
+%
+% The declarations are the manual's own: the automatic subsets of page 11-11,
+% the key data example of page 11-19, and the manual subset of page 11-12. A
+% subset holds entries for only some of the records of a data set — which ones
+% is the WHERE condition for an automatic subset, and the program's own INSERT
+% and REMOVE for a manual one.
+
+STUDENTS DATA SET
+ (
+   NAME  ALPHA(20);
+   GPA   NUMBER(3,2);
+   MAJOR ALPHA(20);
+ );
+
+HONOR-ROLL     SUBSET OF STUDENTS WHERE GPA GTR 3.5      KEY IS NAME;
+ENGLISH-MAJORS SUBSET OF STUDENTS WHERE MAJOR = "ENGLISH" KEY IS NAME;
+
+% The key data option: each entry carries a copy of the named items, so FIND
+% KEY OF answers out of the subset and never reaches the data set.
+
+BOOKS COMPACT DATA SET
+ (
+   TITLE       ALPHA(20);
+   AUTHOR      ALPHA(20);
+   SUBJECT     ALPHA(20);
+   CHECKED-OUT BOOLEAN;
+ );
+
+BY-AUTHOR  SUBSET OF BOOKS WHERE NOT CHECKED-OUT
+             KEY IS AUTHOR,
+             DATA (SUBJECT, TITLE);
+BY-SUBJECT SUBSET OF BOOKS WHERE NOT CHECKED-OUT
+             KEY IS SUBJECT,
+             DATA (AUTHOR, TITLE);
+
+% A set carries key data the same way, and holds every record.
+
+BY-TITLE SET OF BOOKS KEY IS TITLE, NO DUPLICATES, DATA (AUTHOR);
+
+% A manual subset: no WHERE, so nothing maintains it but the program.
+
+EMPLOYEE DATA SET
+ (
+   EMP-NUMBER NUMBER(7);
+   NAME       ALPHA(20);
+   TITLE      ALPHA(18);
+   SUBORDINATE SUBSET OF EMPLOYEE
+                 KEY IS EMP-NUMBER,
+                 ORDERED LIST;
+ );
+
+% An automatic subset over an embedded data set. Section 11 requires an
+% automatic subset to be declared at the same level as the data set it refers
+% to, and this is that level: one POSTING collection per DEPT record, and one
+% OPEN-POSTINGS over it per DEPT record as well.
+
+DEPT DATA SET
+ (
+   DEPT-NO NUMBER(4);
+   POSTING DATA SET
+    (
+      LINE-NO NUMBER(6);
+      AMOUNT  NUMBER(S11,2);
+      VOIDED  BOOLEAN;
+    );
+   OPEN-POSTINGS SUBSET OF POSTING WHERE NOT VOIDED KEY IS LINE-NO;
+ );

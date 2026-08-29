@@ -1,0 +1,10 @@
+% Manual 8600 0213-424, Section 3, Example 1.
+% A database of one data set with four data items.
+
+PERSONNEL DATA SET
+ (
+   NAME        ALPHA(30);
+   EMPLOYEE-NO NUMBER(6);
+   DEPARTMENT  ALPHA(20);
+   PHONE       NUMBER(10);
+ );

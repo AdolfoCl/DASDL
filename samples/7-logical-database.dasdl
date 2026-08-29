@@ -1,0 +1,98 @@
+% Logical databases — Section 12 of 8600 0213-424.
+%
+% Examples 1 and 2 of the section, unchanged but for the names of the second,
+% which the manual reuses across both. A logical database names the structures
+% a program may see: data sets or the remaps that redescribe them, each with
+% the sets it is reached by. A program invokes the logical database, never the
+% physical one, which is what makes a remap reachable at all.
+
+OPTIONS (AUDIT, REAPPLYCOMPLETED, INDEPENDENTTRANS);
+
+RDS RESTART DATASET (RDS-DATA ALPHA(30));
+
+D DATA SET
+ (
+   D1 ALPHA(5);
+   D2 REAL;
+   E DATA SET
+    (
+      E1 NUMBER(4);
+      E2 FIELD(8);
+    );
+   S-E SET OF E KEY E1;
+   R-E REMAPS E
+    (
+      E1;
+    );
+ );
+
+R-D REMAPS D
+ (
+   D1;
+   R-E;
+   S-E;
+ );
+
+S-D SET OF D KEY D1;
+
+LDB1 DATABASE (D, RDS);
+LDB2 DATABASE (R-D, RDS);
+
+% Example 2. EXDB is the database itself, so R-G is a global data remap: it
+% redescribes the global items rather than a data set record. The logical
+% databases below rename structures on the way in, and restrict each to the
+% sets it may be reached by.
+
+G1 ALPHA(10);
+G2 NUMBER(S9,2);
+G3 REAL(12);
+
+R-G REMAPS EXDB
+ (
+   G1 ALPHA(10) READONLY;
+   G3;
+ );
+
+X-D1 DATA SET
+ (
+   A REAL;
+   B NUMBER(5);
+   C ALPHA(5);
+ );
+
+S1A SET OF X-D1 KEY A;
+S1B SET OF X-D1 KEY B;
+
+X-D2 DATA SET
+ (
+   X FIELD(8);
+   Y ALPHA(5);
+   Z FIELD(Z1; Z2; Z3;);
+   XE DATA SET
+    (
+      K REAL;
+      M FIELD(14);
+    );
+   S-XE SET OF XE KEY IS K;
+   R-XE REMAPS XE
+    (
+      K;
+      M FIELD(14) HIDDEN;
+    );
+ );
+
+S2A SET OF X-D2 KEY X;
+S2B SET OF X-D2 KEY (X, Y, Z);
+
+R-D2 REMAPS X-D2
+ (
+   P = X;
+   Q = Y ALPHA(5) READONLY;
+   R = Z FIELD(R1 = Z1; R2 = Z2; R3 = Z3;);
+   R-XE;
+   S-XE;
+ );
+
+LDB3 DATABASE (EXDB, X-D1(ALL), X-D2(SET S2 = S2A));
+LDB4 DATABASE (R-G, XD = R-D2(SET S = S2B));
+LDB5 DATABASE (X-D1, R-D2);

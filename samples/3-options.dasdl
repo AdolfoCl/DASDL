@@ -1,0 +1,13 @@
+% Manual 8600 0213-424, Section 3, Example 3.
+% Database options, a run-time parameter and a population global item.
+
+OPTIONS (STATISTICS);
+PARAMETERS (ALLOWEDCORE = 18000);
+POP-OF-PERSONNEL POPULATION(9999) OF PERSONNEL;
+PERSONNEL DATA SET
+ (
+   NAME        ALPHA(30);
+   EMPLOYEE-NO NUMBER(6);
+   DEPARTMENT  ALPHA(20);
+   PHONE       NUMBER(10);
+ );

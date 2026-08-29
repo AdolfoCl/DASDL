@@ -1,0 +1,797 @@
+% DASDL grammar — syntax only.
+%
+% The semantic blocks and the GENERAL SECTION live in dasdl.sem, so that what
+% is left here is the language and nothing else. Trackway reads the two as one
+% file; recombining them happens outside this repository.
+%
+% DASDL — Data and Structure Definition Language, Enterprise Database Server.
+% Drawn from 8600 0213-424, converted to Markdown under ../manuals/sections/.
+% Section 3 gives the top level; 6, 9, 10 and 11 give the elements below it.
+
+
+% Named <ROOT> rather than <DATABASE>: Trackway takes the entry entity by name
+% and accepts only <PROGRAM> or <ROOT>, and a DASDL source is a database
+% description, not a program.
+
+<ROOT> {ESCAPE}:
+
+     ┌◄──────────────────────────────┐
+>>█──┴── <DATABASE ELEMENT> ── ;(1) ─┘── ETXTOK ──█<<
+
+
+<DATABASE ELEMENT>:
+
+>>█──┬── <MODEL OPTION> ──────────────┌──█<<
+     ├── <UPDATE OPTION> ─────────────┤
+     ├── <OPTIONS SPECIFICATION> ─────┤
+     ├── <PARAMETERS SPECIFICATION> ──┤
+     ├── <DEFAULTS SPECIFICATION> ────┤
+     ├── <CODE FILE SPECIFICATION> ───┤
+     ├── <CONTROL FILE SPECIFICATION> ┤
+     ├── <AUDIT TRAIL SPECIFICATION> ─┤
+     └── <STRUCTURE DECLARATION> ─────┘
+
+
+% ---------------------------------------------------------------------------
+% MODEL and UPDATE (Section 4)
+% ---------------------------------------------------------------------------
+
+<MODEL OPTION>:
+
+>>█── MODEL ── IDNTOK(1) ──█<<
+
+
+<UPDATE OPTION>:
+
+>>█── UPDATE(1) ── [IDNTOK(2)] ──█<<
+
+
+% ---------------------------------------------------------------------------
+% Code files, control file, audit trail (Sections 7 and 8)
+% ---------------------------------------------------------------------------
+
+<CODE FILE SPECIFICATION>:
+
+>>█── <CODE FILE NAME> ── = ── <FILE TITLE> ──█<<
+
+
+<CODE FILE NAME>:
+
+>>█──┬── ACCESSROUTINES(1) ┌──█<<
+     ├── DMCONTROL(2) ─────┤
+     ├── DMUTILITY(3) ─────┤
+     ├── DMSUPPORT(4) ─────┤
+     ├── LOBUTILITY(5) ────┤
+     ├── RECOVERY(6) ──────┤
+     ├── DATARECOVERY(7) ──┤
+     ├── RECONSTRUCT(8) ───┤
+     └── REORGANIZATION(9) ┘
+
+
+% An MCP file title: an optional usercode in parentheses, the name in one or
+% more nodes separated by '/', and an optional family.
+
+<FILE TITLE>:
+
+>>█── [<USERCODE>] ── <FILE NAME> ── [<ON FAMILY>] ──█<<
+
+
+<USERCODE>:
+
+>>█── ( ── [IDNTOK, RESTOK](1) ── ) ──█<<
+
+
+<FILE NAME>:
+
+     ┌◄─────────── / ──────────┐
+>>█──┴── [IDNTOK, RESTOK](1) ──┘──█<<
+
+
+<ON FAMILY>:
+
+>>█── ON ── [IDNTOK, RESTOK](1) ──█<<
+
+
+<CONTROL FILE SPECIFICATION>:
+
+>>█── CONTROL(1) ── FILE ── <PHYSICAL OPTIONS> ──█<<
+
+
+<AUDIT TRAIL SPECIFICATION>:
+
+>>█── AUDIT(1) ── TRAIL ── <PHYSICAL OPTIONS> ──█<<
+
+
+% ---------------------------------------------------------------------------
+% Defaults (Section 5)
+% ---------------------------------------------------------------------------
+
+% Global defaults and per-structure default blocks are one list: the manual
+% draws them as two, but they interleave without punctuation between them, so
+% one loop that accepts either is what the source actually looks like.
+
+<DEFAULTS SPECIFICATION>:
+
+>>█── DEFAULTS(1) ── ( ── <DEFAULT ENTRY LIST> ── ) ──█<<
+
+
+<DEFAULT ENTRY LIST>:
+
+     ┌◄──────── [,] ───────┐
+>>█──┴── <DEFAULT ENTRY> ──┘──█<<
+
+
+% The per-structure block is tried first. Both it and a plain attribute open
+% with a word, so what separates them is the parenthesis that has to follow a
+% structure word — an entity that fails on its first token yields to the next
+% branch without consuming anything.
+
+<DEFAULT ENTRY>:
+
+>>█──┬── <STRUCTURE DEFAULT> ┌──█<<
+     └── <ATTRIBUTE> ────────┘
+
+
+<STRUCTURE DEFAULT>:
+
+>>█── <STRUCTURE DEFAULT KIND> ── <PHYSICAL OPTIONS> ──█<<
+
+
+<STRUCTURE DEFAULT KIND>:
+
+>>█──┬── <DATA SET WORD> ┌──█<<
+     ├── SET(1) ─────────┤
+     ├── SUBSET(2) ──────┤
+     ├── ACCESS(3) ──────┤
+     ├── ALPHA(4) ───────┤
+     ├── NUMBER(5) ──────┤
+     ├── REAL(6) ────────┤
+     └── FIELD(7) ───────┘
+
+
+% Every structure — data set, set, subset, global item, physical
+% specification — opens with its own name, so the name is consumed once here
+% and what follows decides which structure it was.
+
+<STRUCTURE DECLARATION> {ESCAPE}:
+
+>>█── IDNTOK(1) ── [STRTOK(2)] ── <STRUCTURE BODY> ──█<<
+
+
+<STRUCTURE BODY>:
+
+>>█──┬── <SET DECLARATION> ──────────────┌──█<<
+     ├── <SUBSET DECLARATION> ───────────┤
+     ├── <ACCESS DECLARATION> ───────────┤
+     ├── <REMAP DECLARATION> ────────────┤
+     ├── <LOGICAL DATABASE DECLARATION> ─┤
+     ├── <VIRTUAL DECLARATION> ──────────┤
+     ├── OF(1) ── IDNTOK(2) ─────────────┤
+     ├── <PHYSICAL OPTIONS> ─────────────┤
+     ├── <ITEM DESCRIPTION> ─────────────┤
+     └── <ITEM ATTRIBUTE LIST> ──────────┘
+
+
+% ---------------------------------------------------------------------------
+% Data sets (Section 9)
+% ---------------------------------------------------------------------------
+
+<DATA SET DECLARATION>:
+
+>>█── [<DATA SET KIND>] ── <DATA SET WORD> ── <RECORD DESCRIPTION> ── [<STRUCTURE TAIL>] ──█<<
+
+
+% Physical options come either parenthesised or, after the record description,
+% as a bare comma-separated list.
+
+<STRUCTURE TAIL>:
+
+>>█──┬── <PHYSICAL OPTIONS> ─────┌──█<<
+     └── [,] ── <ATTRIBUTE LIST> ┘
+
+
+<DATA SET KIND>:
+
+>>█──┬── COMPACT(1) ──┌──█<<
+     ├── DIRECT(2) ───┤
+     ├── ORDERED(3) ──┤
+     ├── RANDOM(4) ───┤
+     ├── RESTART(5) ──┤
+     ├── STANDARD(6) ─┤
+     └── UNORDERED(7) ┘
+
+
+% DATA, DATA SET, DATA-SET and DATASET all name the same thing; the hyphenated
+% and closed-up spellings arrive as one word, so only DATA needs the follower.
+
+<DATA SET WORD>:
+
+>>█──┬── DATA(1) ── [SET] ┌──█<<
+     ├── DATA-SET(2) ─────┤
+     └── DATASET(3) ──────┘
+
+
+<RECORD DESCRIPTION>:
+
+>>█── ((1) ── <RECORD ENTRY LIST> ── )(2) ──█<<
+
+
+% The semicolon is hung on the entry rather than drawn between entries: hung
+% there, the decision to go round again is made on the token after it — another
+% name, or the closing parenthesis — and the last semicolon may be left off,
+% which is how the remap record descriptions of Section 12 are written.
+
+<RECORD ENTRY LIST> {ESCAPE TO}:
+
+     ┌◄──────────────────────────┐
+>>█──┴── <RECORD ENTRY> ── [;] ──┘──█<<
+
+
+% One shape serves every entry inside a parenthesised description: a record
+% item, a field bit declaration, an embedded structure, and every kind of remap
+% entry in Section 12. They differ only in what follows the name, which is what
+% <STRUCTURE BODY> enumerates — and a name on its own, with nothing after it,
+% is a field bit or an item carried into a remap unchanged.
+%
+% The rename is drawn the other way round from the manual, which writes
+% 'new = old'. Read as a name and an optional '= name' the choice costs no
+% lookahead; which of the two is the new name is settled in the model.
+
+<RECORD ENTRY> {ESCAPE}:
+
+>>█──┬── FILLER(1) ── SIZE ── INTTOK(2) ────────────────────────────────┌──█<<
+     └── IDNTOK(3) ── [<RENAME>] ── [STRTOK(4)] ── [<STRUCTURE BODY>] ──┘
+
+
+<RENAME>:
+
+>>█── = ── IDNTOK(1) ──█<<
+
+
+% ---------------------------------------------------------------------------
+% Items (Section 9; global items are the same shapes, Section 10)
+% ---------------------------------------------------------------------------
+
+<ITEM DESCRIPTION>:
+
+>>█──┬── <ALPHA ITEM> ──────────┌── [<ITEM ATTRIBUTE LIST>] ──█<<
+     ├── <NUMBER ITEM> ─────────┤
+     ├── <BOOLEAN ITEM> ────────┤
+     ├── <REAL ITEM> ───────────┤
+     ├── <FIELD ITEM> ──────────┤
+     ├── <GROUP ITEM> ──────────┤
+     ├── <POPULATION ITEM> ─────┤
+     ├── <COUNT ITEM> ──────────┤
+     └── <DATA SET DECLARATION> ┘
+
+
+<ALPHA ITEM>:
+
+>>█── ALPHA(1) ── ( ── INTTOK(2) ── ) ──█<<
+
+
+% NUMBER(6), NUMBER(9,3) and NUMBER(S5,2) — the signed form leads with S, which
+% is a letter, so it reaches the parser as an identifier rather than an integer.
+
+<NUMBER ITEM>:
+
+>>█── NUMBER(1) ── [<NUMERIC SIZE>] ──█<<
+
+
+<REAL ITEM>:
+
+>>█── REAL(1) ── [<NUMERIC SIZE>] ──█<<
+
+
+<NUMERIC SIZE>:
+
+>>█── ( ──┬── INTTOK(1) ┌── [<SCALE FACTOR>] ── ) ──█<<
+          └── IDNTOK(2) ┘
+
+
+<SCALE FACTOR>:
+
+>>█── , ── INTTOK(1) ──█<<
+
+
+<BOOLEAN ITEM>:
+
+>>█── BOOLEAN(1) ──█<<
+
+
+% FIELD(n) declares a bit field of n bits; FIELD ( ... ) declares Boolean items
+% packed into one field. Both open with '(', so the paren is consumed first.
+
+<FIELD ITEM>:
+
+>>█── FIELD(1) ── ((2) ── <FIELD BODY> ── )(3) ──█<<
+
+
+<FIELD BODY>:
+
+>>█──┬── INTTOK(1) ──────────┌──█<<
+     └── <RECORD ENTRY LIST> ┘
+
+
+<GROUP ITEM>:
+
+>>█── GROUP(1) ── <RECORD DESCRIPTION> ──█<<
+
+
+% A population or count item counts the records of a named structure. Their
+% virtual forms in Section 12 count nothing declared — the program assigns the
+% value — so the OF is what the two forms differ by.
+
+<POPULATION ITEM>:
+
+>>█── POPULATION(1) ── ( ── INTTOK(2) ── ) ── [<OF STRUCTURE>] ──█<<
+
+
+<COUNT ITEM>:
+
+>>█── COUNT(1) ──┬── <OF STRUCTURE> ──────┌──█<<
+                 └── ( ── INTTOK(2) ── ) ─┘
+
+
+<OF STRUCTURE>:
+
+>>█── OF ── IDNTOK(1) ──█<<
+
+
+% Attributes are comma-separated and run to the semicolon that ends the item.
+
+<ITEM ATTRIBUTE LIST>:
+
+     ┌◄─────── [,] ────────┐
+>>█──┴── <ITEM ATTRIBUTE> ─┘──█<<
+
+
+<ITEM ATTRIBUTE>:
+
+% The last branch catches the rest of Section 9's item attributes — COMS-ID,
+% CCSVERSION, DATAENCRYPT, the GEMCOS family, the remap and stored clauses — as
+% a word with an optional value. They are spelled out here only where the shape
+% of the clause is more than name-and-value.
+
+>>█──┬── REQUIRED(1) ────────────────────────────────────────┌──█<<
+     ├── READONLY(2) ────────────────────────────────────────┤
+     ├── NULL(3) ── [<IS OR EQUALS>] ── <ITEM VALUE> ────────┤
+     ├── INITIALVALUE(4) ── [<IS OR EQUALS>] ── <ITEM VALUE> ┤
+     ├── <OCCURS CLAUSE> ────────────────────────────────────┤
+     └── <ATTRIBUTE> ────────────────────────────────────────┘
+
+
+<IS OR EQUALS>:
+
+>>█──┬── IS ┌──█<<
+     └── = ─┘
+
+
+<ITEM VALUE>:
+
+>>█──┬── HIGH-VALUE(1) ┌──█<<
+     ├── LOW-VALUE(2) ─┤
+     ├── BLANKS(3) ────┤
+     ├── TRUE(4) ──────┤
+     ├── FALSE(5) ─────┤
+     ├── INTTOK(6) ────┤
+     ├── NUMTOK(7) ────┤
+     └── STRTOK(8) ────┘
+
+
+<OCCURS CLAUSE>:
+
+>>█── [OCCURS, OC] ── INTTOK(1) ── [TIMES] ── [<DEPENDING ON>] ──█<<
+
+
+<DEPENDING ON>:
+
+>>█── DEPENDING ── [ON] ── IDNTOK(1) ──█<<
+
+
+% ---------------------------------------------------------------------------
+% Sets, subsets and Accesses (Section 11)
+% ---------------------------------------------------------------------------
+
+<SET DECLARATION>:
+
+>>█── SET(1) ── OF ── IDNTOK(2) ── [<WHERE CONDITION>] ── [<SET TYPE>] ── [<PHYSICAL OPTIONS>] ──█<<
+
+
+<SUBSET DECLARATION>:
+
+>>█── SUBSET(1) ── OF ── IDNTOK(2) ── [<WHERE CONDITION>] ── [<SET TYPE>] ── [<PHYSICAL OPTIONS>] ──█<<
+
+
+% An Access is not a physical structure: it names the ordering of the records
+% in the data set itself, so it reads TO rather than OF.
+
+<ACCESS DECLARATION>:
+
+>>█── ACCESS(1) ── TO ── IDNTOK(2) ── [<WHERE CONDITION>] ── [<SET TYPE>] ── [<PHYSICAL OPTIONS>] ──█<<
+
+
+<SET TYPE>:
+
+>>█──┬── BIT(1) ── VECTOR ────┌──█<<
+     ├── LIST(2) ─────────────┤
+     ├── UNORDERED(3) ── LIST ┤
+     └── <KEY CLAUSE> ────────┘
+
+
+% After the keys, a set carries a comma-separated tail mixing DUPLICATES, the
+% index organisation and physical attributes, written without parentheses.
+
+<KEY CLAUSE>:
+
+>>█── KEY ── [IS] ── <KEY SPEC> ── [<SET TAIL>] ──█<<
+
+
+% The tail may open with its own comma, straight after the closing key paren.
+
+<SET TAIL>:
+
+>>█── [,] ── <SET OPTION LIST> ──█<<
+
+
+<SET OPTION LIST>:
+
+     ┌◄─────── [,] ──────┐
+>>█──┴── <SET OPTION> ───┘──█<<
+
+
+<SET OPTION>:
+
+>>█──┬── DUPLICATES(1) ── [<DUPLICATES OPTION>] ─────────┌──█<<
+     ├── NO(2) ── DUPLICATES(3) ── [<DUPLICATES OPTION>] ┤
+     ├── INDEX(4) ── [RANDOM, SEQUENTIAL](5) ────────────┤
+     ├── ORDERED(6) ── LIST ─────────────────────────────┤
+     ├── I-R(7) ─────────────────────────────────────────┤
+     ├── I-S(8) ─────────────────────────────────────────┤
+     ├── O-L(9) ─────────────────────────────────────────┤
+     ├── DATA(10) ── ( ── <KEY ITEM LIST> ── )(11) ──────┤
+     └── <ATTRIBUTE> ────────────────────────────────────┘
+
+
+<DUPLICATES OPTION>:
+
+>>█──┬── FIRST(1) ──────┌──█<<
+     ├── LAST(2) ───────┤
+     └── KEYCHANGEOK(3) ┘
+
+
+<KEY SPEC>:
+
+>>█──┬── IDNTOK(1) ────────────────┌──█<<
+     └── ( ── <KEY ITEM LIST> ── ) ┘
+
+
+<KEY ITEM LIST> {ESCAPE TO}:
+
+     ┌◄─────── , ──────┐
+>>█──┴── <KEY ITEM> ───┘──█<<
+
+
+<KEY ITEM>:
+
+>>█── [IDNTOK, RESTOK](1) ── [<KEY ORDER>] ──█<<
+
+
+<KEY ORDER>:
+
+>>█──┬── ASCENDING(1) ─┌──█<<
+     └── DESCENDING(2) ┘
+
+
+% ---------------------------------------------------------------------------
+% Options, parameters and physical specifications (Sections 6 and 10)
+% ---------------------------------------------------------------------------
+
+<OPTIONS SPECIFICATION>:
+
+>>█── OPTIONS(1) ── ( ── <ATTRIBUTE LIST> ── ) ──█<<
+
+
+<PARAMETERS SPECIFICATION>:
+
+>>█── PARAMETERS(1) ── ( ── <ATTRIBUTE LIST> ── ) ──█<<
+
+
+<PHYSICAL OPTIONS>:
+
+>>█── ((1) ── <ATTRIBUTE LIST> ── )(2) ──█<<
+
+
+% The attribute names inside these parentheses are open-ended — every physical
+% option, run-time parameter and database option in the manual lands here — so
+% they are matched as identifiers rather than spelled out one by one.
+
+<ATTRIBUTE LIST> {ESCAPE TO}:
+
+     ┌◄────── [,] ──────┐
+>>█──┴── <ATTRIBUTE> ───┘──█<<
+
+
+<ATTRIBUTE>:
+
+>>█── [IDNTOK, RESTOK](1) ── [<ATTRIBUTE VALUE>] ──█<<
+
+
+% Attribute values are read as a run of words rather than one value per
+% attribute. The manual gives each physical option its own value grammar —
+% BUFFERS = 4 + 1 PER RANDOM USER OR 2 PER SERIAL USER, POPULATIONWARN =
+% 90 (DISPLAY), CONTROLPOINT = 2 SYNCPOINTS — and spelling all of them out
+% buys checking of values this front end does not yet interpret. The run ends
+% where the enclosing list does, at a comma, a closing parenthesis or a
+% semicolon.
+
+<ATTRIBUTE VALUE>:
+
+>>█── = ── <VALUE EXPRESSION> ──█<<
+
+
+<VALUE EXPRESSION>:
+
+>>█──┬── [IDNTOK, RESTOK](1) ┌──█<<
+     ├── STRTOK(2) ──────────┤
+     └── <NUMERIC VALUE> ────┘
+
+
+% A value that is one word is one word; only a number carries a tail, and the
+% words that may follow it are a closed set of units and qualifiers. That is
+% what tells "POPULATION = 1024 PACK = CLCDISCO01" — two attributes with no
+% comma between them — from "AREASIZE = 75 BLOCKS", which is one.
+
+<NUMERIC VALUE>:
+
+>>█── [INTTOK, NUMTOK](1) ── [<NUMERIC QUALIFIER LIST>] ──█<<
+
+
+<NUMERIC QUALIFIER LIST>:
+
+     ┌◄───────────────────────┐
+>>█──┴── <NUMERIC QUALIFIER> ─┘──█<<
+
+
+<NUMERIC QUALIFIER>:
+
+>>█──┬── <UNIT> ───────────────────────┌──█<<
+     ├── <PER CLAUSE> ─────────────────┤
+     ├── "+"(1) ── [INTTOK, NUMTOK](2) ┤
+     ├── OR(3) ── [INTTOK, NUMTOK](4) ─┤
+     └── ( ── [IDNTOK, RESTOK](5) ── ) ┘
+
+
+<PER CLAUSE>:
+
+>>█── PER(1) ── [<BUFFER KIND>] ── USER(2) ──█<<
+
+
+<BUFFER KIND>:
+
+>>█──┬── RANDOM(1) ┌──█<<
+     └── SERIAL(2) ┘
+
+
+<UNIT>:
+
+>>█──┬── WORDS(1) ────────┌──█<<
+     ├── BLOCKS(2) ───────┤
+     ├── RECORDS(3) ──────┤
+     ├── ENTRIES(4) ──────┤
+     ├── SEGMENTS(5) ─────┤
+     ├── BYTES(6) ────────┤
+     ├── BITS(7) ─────────┤
+     ├── SECONDS(8) ──────┤
+     ├── SYNCPOINTS(9) ───┤
+     └── TRANSACTIONS(10) ┘
+
+
+% ---------------------------------------------------------------------------
+% WHERE conditions on automatic subsets (Section 11; the Boolean expression
+% itself is Section 2)
+% ---------------------------------------------------------------------------
+
+<WHERE CONDITION>:
+
+>>█── WHERE(1) ── <BOOLEAN EXPRESSION> ──█<<
+
+
+<BOOLEAN EXPRESSION>:
+
+>>█── <BOOLEAN TERM> ── [<BOOLEAN TAIL>] ──█<<
+
+
+<BOOLEAN TAIL>:
+
+     ┌◄───────────────────────────────────┐
+>>█──┴── [AND, OR](1) ── <BOOLEAN TERM> ──┘──█<<
+
+
+<BOOLEAN TERM>:
+
+>>█── [<NEGATION>] ── <BOOLEAN PRIMARY> ──█<<
+
+
+<NEGATION>:
+
+>>█──┬── NOT(1) ┌──█<<
+     └── "^"(2) ┘
+
+
+<BOOLEAN PRIMARY>:
+
+>>█──┬── TRUE(1) ─────────────────────────────┌──█<<
+     ├── FALSE(2) ────────────────────────────┤
+     ├── ((3) ── <BOOLEAN EXPRESSION> ── )(4) ┤
+     └── <COMPARISON> ────────────────────────┘
+
+
+<COMPARISON>:
+
+>>█── <OPERAND> ── [<COMPARISON TAIL>] ──█<<
+
+
+<COMPARISON TAIL>:
+
+>>█── <RELATIONAL OPERATOR> ── <OPERAND> ──█<<
+
+
+% An operand is a value or a run of them joined by arithmetic operators. The
+% WHERE conditions of Section 11 only ever compare single values, but the
+% virtual items of Section 12 assign expressions — V VIRTUAL NUMBER(8) = 2*RSN
+% — and they reach the same entity. Parentheses are deliberately left out: a
+% '(' here would collide with the parenthesised <BOOLEAN EXPRESSION> above.
+
+<OPERAND>:
+
+>>█── <OPERAND PRIMARY> ── [<ARITHMETIC TAIL>] ──█<<
+
+
+<OPERAND PRIMARY>:
+
+>>█──┬── IDNTOK(1) ┌──█<<
+     ├── INTTOK(2) ┤
+     ├── NUMTOK(3) ┤
+     └── STRTOK(4) ┘
+
+
+<ARITHMETIC TAIL>:
+
+     ┌◄──────────────────────────────────────────────┐
+>>█──┴── <ARITHMETIC OPERATOR> ── <OPERAND PRIMARY> ─┘──█<<
+
+
+<ARITHMETIC OPERATOR>:
+
+>>█──┬── "+"(1) ┌──█<<
+     ├── "-"(2) ┤
+     ├── "*"(3) ┤
+     └── "/"(4) ┘
+
+
+<RELATIONAL OPERATOR>:
+
+>>█──┬── =(1) ──┌──█<<
+     ├── EQL(2) ┤
+     ├── NEQ(3) ┤
+     ├── LSS(4) ┤
+     ├── LEQ(5) ┤
+     ├── GTR(6) ┤
+     ├── GEQ(7) ┤
+     ├── "<"(8) ┤
+     └── ">"(9) ┘
+
+
+% ---------------------------------------------------------------------------
+% Remaps and logical databases (Section 12)
+% ---------------------------------------------------------------------------
+
+% A remap and a global data remap are drawn separately in the manual — one
+% redescribes a data set record, the other the database's global data — but
+% their syntax differs only in which entries the record description admits, and
+% nothing at the REMAPS keyword says which of the two names follows. One entity
+% reads both; which was meant is a question for the model, where the name is
+% resolved. REQUIRED ALL and READONLY ALL are read as the item attributes they
+% spell, two words apiece, the way every other two-word attribute here is.
+
+<REMAP DECLARATION>:
+
+>>█── REMAPS(1) ── IDNTOK(2) ── [STRTOK(3)] ── [<ITEM ATTRIBUTE LIST>] ── <REMAP RECORD DESCRIPTION> ──█<<
+
+
+<REMAP RECORD DESCRIPTION>:
+
+>>█── <RECORD DESCRIPTION> ── [<VARIABLE-FORMAT PART>] ── [<SELECT VERIFY LIST>] ──█<<
+
+
+% A virtual item is declared where a record item would be and is not in the
+% record: its value is computed on retrieval, or held only for the life of the
+% work area. The type that follows is an ordinary item description — OCCURS
+% among its attributes — so all that is left of the manual's virtual forms is
+% the assigned value.
+
+<VIRTUAL DECLARATION>:
+
+>>█── VIRTUAL(1) ── [STRTOK(2)] ── <ITEM DESCRIPTION> ── [<VIRTUAL VALUE>] ──█<<
+
+
+<VIRTUAL VALUE>:
+
+>>█── =(1) ── <BOOLEAN EXPRESSION> ──█<<
+
+
+% A variable-format part labels each of a record's formats with an integer, so
+% the colon separates the label from the description it introduces.
+
+<VARIABLE-FORMAT PART>:
+
+     ┌◄──────── [,] ────────────────┐
+>>█──┴── <VARIABLE-FORMAT RECORD> ──┘──█<<
+
+
+<VARIABLE-FORMAT RECORD>:
+
+>>█── INTTOK(1) ── ":" ── <RECORD DESCRIPTION> ── [<SELECT VERIFY LIST>] ──█<<
+
+
+% SELECT decides which records the remap returns, VERIFY which it will store.
+
+<SELECT VERIFY LIST>:
+
+     ┌◄──────── [,] ──────┐
+>>█──┴── <SELECT VERIFY> ─┘──█<<
+
+
+<SELECT VERIFY>:
+
+>>█── [SELECT, VERIFY](1) ── <BOOLEAN EXPRESSION> ──█<<
+
+
+% A logical database names the structures a program may see — data sets, or the
+% remaps that redescribe them, each with the sets it may be reached by. A remap
+% is reachable no other way.
+
+<LOGICAL DATABASE DECLARATION>:
+
+>>█── <DATABASE WORD> ── ((1) ── <STRUCTURE LIST> ── )(2) ── [<LOGICAL DATABASE OPTION>] ──█<<
+
+
+<DATABASE WORD>:
+
+>>█──┬── DATABASE(1) ─┌──█<<
+     └── DATA-BASE(2) ┘
+
+
+<LOGICAL DATABASE OPTION>:
+
+>>█── GUARDFILE(1) ── [<IS OR EQUALS>] ── <FILE TITLE> ──█<<
+
+
+<STRUCTURE LIST>:
+
+     ┌◄────────── [,] ───────────┐
+>>█──┴── <STRUCTURE LIST ENTRY> ─┘──█<<
+
+
+<STRUCTURE LIST ENTRY>:
+
+>>█── IDNTOK(1) ── [<RENAME>] ── [<SET PART>] ──█<<
+
+
+<SET PART>:
+
+>>█── ((1) ──┬── ALL(2) ──────────────────────┌── )(5) ──█<<
+             ├── NONE(3) ─────────────────────┤
+             └── [SET, SETS](4) ── <SET LIST> ┘
+
+
+<SET LIST>:
+
+     ┌◄──────── [,] ───────┐
+>>█──┴── <SET LIST ENTRY> ─┘──█<<
+
+
+<SET LIST ENTRY>:
+
+>>█── IDNTOK(1) ── [<RENAME>] ──█<<

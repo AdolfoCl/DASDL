@@ -1,0 +1,19 @@
+% Manual 8600 0213-424, Section 9: numeric items in a compact data set,
+% exercising fields, OCCURS, NULL and INITIALVALUE.
+
+C COMPACT DATA SET
+ (
+   B BOOLEAN INITIALVALUE TRUE;
+   F FIELD
+    (
+      F1 BOOLEAN;
+      F2 BOOLEAN;
+    );
+   N NUMBER(3);
+   S NUMBER(S7,2) NULL IS HIGH-VALUE,
+                  INITIALVALUE IS 0;
+   T NUMBER(9)    OCCURS 10 TIMES;
+   U NUMBER(5,5)  OCCURS 20 TIMES DEPENDING ON N;
+   V NUMBER(7)    NULL IS 0, REQUIRED;
+   R REAL;                          % almost anywhere
+ );
