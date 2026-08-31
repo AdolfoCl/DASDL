@@ -1,0 +1,534 @@
+<title>DASDL to MariaDB</title>
+<style>
+/*DASDL-FONTS-HERE*/
+</style>
+<style>
+  :root {
+    --ground:#f4f7fa; --surface:#ffffff; --sunken:#eef2f7;
+    --ink:#121821; --muted:#5b6675; --faint:#8a95a4;
+    --rule:#d8e0ea; --rule-soft:#e7edf4;
+    --accent:#1f4e8c; --accent-soft:#e5edf8; --on-accent:#ffffff;
+    --bad:#9c3226; --bad-soft:#fbeae7;
+    --good:#1d6b4f;
+    --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+    --serif:"IBM Plex Serif",Georgia,serif;
+    --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0e131a; --surface:#161d27; --sunken:#111822;
+      --ink:#e4eaf2; --muted:#9aa6b6; --faint:#6d7889;
+      --rule:#27313f; --rule-soft:#1e2733;
+      --accent:#7fadea; --accent-soft:#1a2839; --on-accent:#0b1219;
+      --bad:#e98d82; --bad-soft:#2e1c1a;
+      --good:#63b894;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0e131a; --surface:#161d27; --sunken:#111822;
+    --ink:#e4eaf2; --muted:#9aa6b6; --faint:#6d7889;
+    --rule:#27313f; --rule-soft:#1e2733;
+    --accent:#7fadea; --accent-soft:#1a2839; --on-accent:#0b1219;
+    --bad:#e98d82; --bad-soft:#2e1c1a;
+    --good:#63b894;
+  }
+
+  *,*::before,*::after { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--sans); font-size:15px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1240px; margin:0 auto; padding:28px 22px 56px; }
+
+  /* ---- header ---------------------------------------------------- */
+  header { display:flex; flex-wrap:wrap; gap:18px 32px; align-items:flex-end; justify-content:space-between; }
+  h1 {
+    font-family:var(--serif); font-weight:600; font-size:30px; line-height:1.15;
+    margin:0; letter-spacing:-.01em; text-wrap:balance;
+  }
+  h1 .arrow { color:var(--accent); font-family:var(--mono); font-weight:500; padding:0 .12em; }
+  .tagline { margin:6px 0 0; color:var(--muted); max-width:62ch; }
+  .assurance {
+    font-size:13px; color:var(--muted); border:1px solid var(--rule);
+    background:var(--surface); border-radius:3px; padding:9px 13px; max-width:33ch;
+  }
+  .assurance b { color:var(--ink); font-weight:600; }
+  .corner { display:flex; flex-direction:column; align-items:flex-end; gap:9px; }
+  .lang { display:flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; }
+  .lang button {
+    font:inherit; font-size:12px; padding:3px 11px; cursor:pointer;
+    background:var(--surface); color:var(--muted); border:0; border-right:1px solid var(--rule);
+  }
+  .lang button:last-child { border-right:0; }
+  .lang button[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  .lang button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* the rail: the grammar in this project is drawn, and this is its notation */
+  .rail { display:block; width:100%; height:13px; margin:20px 0 24px; color:var(--rule); }
+
+  /* ---- controls --------------------------------------------------- */
+  .controls { display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-end; margin-bottom:18px; }
+  .field { display:flex; flex-direction:column; gap:7px; align-items:flex-start; }
+  .label { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:600; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip {
+    font-family:var(--mono); font-size:12.5px; padding:5px 10px; cursor:pointer;
+    background:var(--surface); color:var(--muted);
+    border:1px solid var(--rule); border-radius:3px;
+  }
+  .chip:hover { color:var(--ink); border-color:var(--accent); }
+  .chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; }
+  .seg { display:flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; }
+  .seg button {
+    font:inherit; font-size:13px; padding:5px 12px; cursor:pointer;
+    background:var(--surface); color:var(--muted); border:0; border-right:1px solid var(--rule);
+  }
+  .seg button:last-child { border-right:0; }
+  .seg button[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent); font-weight:600; }
+  .run {
+    font:inherit; font-weight:600; font-size:14px; cursor:pointer;
+    background:var(--accent); color:var(--on-accent); border:1px solid var(--accent);
+    border-radius:3px; padding:8px 20px; margin-left:auto;
+  }
+  .run:disabled { opacity:.5; cursor:progress; }
+  .run kbd { font-family:var(--mono); font-size:11px; opacity:.75; font-weight:400; margin-left:8px; }
+
+  /* ---- panes ------------------------------------------------------- */
+  .panes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:18px; align-items:start; }
+  @media (max-width:900px) { .panes { grid-template-columns:minmax(0,1fr); } }
+  .pane { border:1px solid var(--rule); border-radius:4px; background:var(--surface); overflow:hidden; }
+  .pane-head {
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:0 12px; border-bottom:1px solid var(--rule); background:var(--sunken);
+    min-height:38px;
+  }
+  .pane-title { font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); font-weight:600; }
+  .tabs { display:flex; gap:2px; }
+  .tab {
+    font:inherit; font-size:12.5px; padding:9px 11px; cursor:pointer; background:none; border:0;
+    color:var(--muted); border-bottom:2px solid transparent; margin-bottom:-1px;
+  }
+  .tab:hover { color:var(--ink); }
+  .tab[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+  .tab .count { font-family:var(--mono); font-size:11px; color:var(--faint); margin-left:5px; }
+  textarea, pre.out {
+    font-family:var(--mono); font-size:12.5px; line-height:1.62;
+    margin:0; padding:14px; border:0; width:100%;
+    background:var(--surface); color:var(--ink);
+    height:clamp(300px,52vh,560px); overflow:auto; tab-size:4;
+  }
+  textarea { resize:vertical; display:block; white-space:pre; overflow-wrap:normal; }
+  textarea:focus-visible, .tab:focus-visible, .chip:focus-visible, .run:focus-visible, .seg button:focus-visible {
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  pre.out { white-space:pre; }
+  pre.out.empty { color:var(--faint); font-style:italic; }
+  .copy {
+    font:inherit; font-size:12px; cursor:pointer; color:var(--muted);
+    background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:3px 9px;
+  }
+  .copy:hover { color:var(--accent); border-color:var(--accent); }
+
+  /* ---- status ------------------------------------------------------ */
+  .status {
+    display:flex; flex-wrap:wrap; align-items:center; gap:9px 16px;
+    margin:16px 0 0; padding:11px 14px; min-height:46px;
+    border:1px solid var(--rule); border-radius:4px; background:var(--surface);
+  }
+  .status[data-state="error"] { border-color:var(--bad); background:var(--bad-soft); }
+  .verdict { font-weight:600; font-size:14px; display:flex; align-items:center; gap:8px; }
+  .status[data-state="ok"] .verdict { color:var(--good); }
+  .status[data-state="error"] .verdict { color:var(--bad); }
+  .status[data-state="idle"] .verdict { color:var(--muted); font-weight:400; }
+  .dot { width:7px; height:7px; border-radius:50%; background:currentColor; flex:none; }
+  .stats { display:flex; flex-wrap:wrap; gap:7px; }
+  .stat {
+    font-family:var(--mono); font-size:11.5px; padding:3px 8px; border-radius:3px;
+    background:var(--sunken); border:1px solid var(--rule-soft); color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+  .stat b { color:var(--ink); font-weight:600; }
+  .timing { margin-left:auto; font-family:var(--mono); font-size:11.5px; color:var(--faint); font-variant-numeric:tabular-nums; }
+
+  footer { margin-top:34px; padding-top:20px; border-top:1px solid var(--rule); color:var(--muted); font-size:13.5px; }
+  footer p { margin:0 0 9px; max-width:74ch; }
+  footer code, .assurance code { font-family:var(--mono); font-size:.92em; color:var(--ink); }
+  @media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>DASDL <span class="arrow">&#8594;</span> MariaDB</h1>
+      <p class="tagline" data-i18n="tagline"></p>
+    </div>
+    <div class="corner">
+      <p class="assurance" data-i18n-html="assurance"></p>
+      <div class="lang" role="group" aria-label="Language / Idioma">
+        <button type="button" data-lang="en" lang="en">English</button>
+        <button type="button" data-lang="es" lang="es">Espa&ntilde;ol</button>
+      </div>
+    </div>
+  </header>
+
+  <svg class="rail" viewBox="0 0 1200 13" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <line x1="0" y1="6.5" x2="1200" y2="6.5" stroke="currentColor" stroke-width="1"/>
+    <rect x="0" y="0" width="4" height="13" fill="currentColor"/>
+    <rect x="1196" y="0" width="4" height="13" fill="currentColor"/>
+    <circle cx="360" cy="6.5" r="3" fill="currentColor"/>
+    <circle cx="600" cy="6.5" r="3" fill="currentColor"/>
+    <circle cx="840" cy="6.5" r="3" fill="currentColor"/>
+  </svg>
+
+  <div class="controls">
+    <div class="field">
+      <span class="label" id="lbl-sample" data-i18n="lblSample"></span>
+      <div class="chips" id="samples" role="group" aria-labelledby="lbl-sample"></div>
+    </div>
+    <div class="field">
+      <span class="label" id="lbl-maintain" data-i18n="lblMaintain"></span>
+      <div class="seg" role="group" aria-labelledby="lbl-maintain">
+        <button type="button" data-maintain="triggers" aria-pressed="true" data-i18n="byServer"></button>
+        <button type="button" data-maintain="runtime" aria-pressed="false" data-i18n="byRuntime"></button>
+      </div>
+    </div>
+    <button class="run" id="run" type="button"><span data-i18n="compile"></span><kbd>Ctrl+&#9166;</kbd></button>
+  </div>
+
+  <div class="panes">
+    <section class="pane">
+      <div class="pane-head">
+        <span class="pane-title" id="src-name">samples/1-personnel.dasdl</span>
+      </div>
+      <textarea id="src" spellcheck="false" wrap="off" data-i18n-aria="srcLabel"></textarea>
+    </section>
+
+    <section class="pane">
+      <div class="pane-head">
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" data-tab="sql" aria-selected="true"><span data-i18n="tabSchema"></span><span class="count" id="c-sql"></span></button>
+          <button class="tab" role="tab" data-tab="json" aria-selected="false"><span data-i18n="tabModel"></span><span class="count" id="c-json"></span></button>
+          <button class="tab" role="tab" data-tab="log" aria-selected="false" data-i18n="tabConsole"></button>
+        </div>
+        <button class="copy" id="copy" type="button" data-i18n="copy"></button>
+      </div>
+      <pre class="out empty" id="out" tabindex="0">Press Compile.</pre>
+    </section>
+  </div>
+
+  <div class="status" id="status" data-state="idle">
+    <span class="verdict"><span class="dot"></span><span id="verdict"></span></span>
+    <div class="stats" id="stats"></div>
+    <span class="timing" id="timing"></span>
+  </div>
+
+  <footer>
+    <p data-i18n-html="footer1"></p>
+    <p data-i18n-html="footer2"></p>
+  </footer>
+</div>
+
+<script>
+//DASDL-SAMPLES-HERE
+</script>
+<script>
+//DASDL-JS-HERE
+</script>
+<script>
+(function () {
+  "use strict";
+
+  /* Two languages, because the reader of a Unisys MCP manual is as likely to
+     be reading it in Spanish. The compiler's own console output stays in the
+     language the program prints: it is the program talking, not the page. */
+  var STRINGS = {
+    en: {
+      title: "DASDL to MariaDB",
+      tagline: "The front end for the language a Unisys ClearPath MCP database uses to " +
+               "describe itself, compiled to WebAssembly. Pick a description from the " +
+               "Unisys manual or write your own, and read out the model and the " +
+               "relational schema.",
+      assurance: "<b>Nothing leaves this page.</b> The compiler runs in your browser as " +
+                 "WebAssembly. There is no server, no upload and no network call &mdash; " +
+                 "check the tab's network panel if you like.",
+      lblSample: "Description",
+      lblMaintain: "Automatic subsets kept by",
+      byServer: "the server", byRuntime: "the runtime",
+      compile: "Compile", compiling: "Compiling\u2026",
+      tabSchema: "Schema", tabModel: "Model", tabConsole: "Console",
+      copy: "Copy", copied: "Copied",
+      srcLabel: "DASDL database description",
+      idle: "Not compiled yet", ok: "Compiled",
+      syntax: "The description did not compile", nothing: "The run produced nothing",
+      pressRun: "Press Compile.", noLog: "No console output yet.",
+      noOutput: "Nothing generated \u2014 the description did not compile.",
+      lines: function (n) { return n + (n === 1 ? " line" : " lines"); },
+      units: { "data set": ["data set", "data sets"], "set": ["set", "sets"],
+               "remap": ["remap", "remaps"],
+               "logical database": ["logical database", "logical databases"],
+               "item": ["item", "items"] },
+      footer1: "The grammar is drawn as railroad diagrams; a compiler generator turns the " +
+               "drawing into the recursive-descent parser running here. The schema is " +
+               "written from the model in memory rather than from the JSON, so the two " +
+               "outputs cannot disagree.",
+      footer2: "Same program, same answers: this WebAssembly build produces output " +
+               "identical to the native <code>g++</code> build, byte for byte, on all " +
+               "eight sample descriptions. Samples are short excerpts from the " +
+               "<i>Enterprise Database Server DASDL Programming Reference Manual</i>, " +
+               "8600&nbsp;0213-424. Unisys has no connection with this work."
+    },
+    es: {
+      title: "DASDL a MariaDB",
+      tagline: "El front end del lenguaje con que una base de datos Unisys ClearPath MCP " +
+               "se describe a s\u00ed misma, compilado a WebAssembly. Elige una " +
+               "descripci\u00f3n del manual de Unisys o escribe la tuya, y lee el modelo " +
+               "y el esquema relacional.",
+      assurance: "<b>Nada sale de esta p\u00e1gina.</b> El compilador corre en tu " +
+                 "navegador como WebAssembly. No hay servidor, ni subida, ni una sola " +
+                 "petici\u00f3n de red &mdash; revisa el panel de red de la pesta\u00f1a " +
+                 "si quieres.",
+      lblSample: "Descripci\u00f3n",
+      lblMaintain: "Los subsets autom\u00e1ticos los mantiene",
+      byServer: "el servidor", byRuntime: "el runtime",
+      compile: "Compilar", compiling: "Compilando\u2026",
+      tabSchema: "Esquema", tabModel: "Modelo", tabConsole: "Consola",
+      copy: "Copiar", copied: "Copiado",
+      srcLabel: "Descripci\u00f3n de base de datos DASDL",
+      idle: "Sin compilar todav\u00eda", ok: "Compilada",
+      syntax: "La descripci\u00f3n no compil\u00f3", nothing: "La ejecuci\u00f3n no produjo nada",
+      pressRun: "Pulsa Compilar.", noLog: "Todav\u00eda no hay salida de consola.",
+      noOutput: "No se gener\u00f3 nada: la descripci\u00f3n no compil\u00f3.",
+      lines: function (n) { return n + (n === 1 ? " l\u00ednea" : " l\u00edneas"); },
+      units: { "data set": ["data set", "data sets"], "set": ["set", "sets"],
+               "remap": ["remap", "remaps"],
+               "logical database": ["base l\u00f3gica", "bases l\u00f3gicas"],
+               "item": ["\u00edtem", "\u00edtems"] },
+      footer1: "La gram\u00e1tica est\u00e1 dibujada como diagramas de v\u00eda; un " +
+               "generador de compiladores convierte el dibujo en el analizador " +
+               "descendente recursivo que corre aqu\u00ed. El esquema se escribe desde el " +
+               "modelo en memoria y no desde el JSON, as\u00ed que las dos salidas no " +
+               "pueden contradecirse.",
+      footer2: "El mismo programa, las mismas respuestas: esta compilaci\u00f3n a " +
+               "WebAssembly produce una salida id\u00e9ntica a la del binario nativo de " +
+               "<code>g++</code>, byte a byte, en las ocho descripciones de muestra. Las " +
+               "muestras son extractos breves del <i>Enterprise Database Server DASDL " +
+               "Programming Reference Manual</i>, 8600&nbsp;0213-424. Unisys no tiene " +
+               "relaci\u00f3n con este trabajo."
+    }
+  };
+
+  var lang = pickLang();
+  var T = STRINGS[lang];
+
+  /* The stored choice wins: a reader who switched once meant it. Otherwise the
+     browser's own order decides, and anything not Spanish gets English. */
+  function pickLang() {
+    var saved = null;
+    try { saved = localStorage.getItem("dasdl-lang"); } catch (e) { /* blocked */ }
+    if (saved === "en" || saved === "es") return saved;
+    var list = navigator.languages || [navigator.language || "en"];
+    for (var i = 0; i < list.length; i++) {
+      var tag = String(list[i]).toLowerCase();
+      if (tag.indexOf("es") === 0) return "es";
+      if (tag.indexOf("en") === 0) return "en";
+    }
+    return "en";
+  }
+
+  function applyLang(next) {
+    lang = next; T = STRINGS[next];
+    try { localStorage.setItem("dasdl-lang", next); } catch (e) { /* blocked */ }
+    document.documentElement.lang = next;
+    document.title = T.title;
+    each("[data-i18n]", function (el) { el.textContent = T[el.dataset.i18n]; });
+    each("[data-i18n-html]", function (el) { el.innerHTML = T[el.dataset.i18nHtml]; });
+    each("[data-i18n-aria]", function (el) { el.setAttribute("aria-label", T[el.dataset.i18nAria]); });
+    each("[data-lang]", function (el) { el.setAttribute("aria-pressed", String(el.dataset.lang === next)); });
+    redraw();
+  }
+
+  function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+
+  var names = Object.keys(SAMPLES);
+  var current = names[0];
+  var maintain = "triggers";
+  var results = { sql: "", json: "", log: "" };
+  var view = "sql";
+  /* What the last run found, kept as data rather than as rendered text, so
+     switching language re-renders it instead of clearing it. */
+  var last = { state: "idle", stats: [], ms: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var srcEl = $("src"), outEl = $("out"), runEl = $("run");
+
+  /* ---- samples ------------------------------------------------------ */
+  names.forEach(function (n) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = n;
+    b.setAttribute("aria-pressed", String(n === current));
+    b.addEventListener("click", function () { load(n); });
+    $("samples").appendChild(b);
+  });
+
+  function load(n) {
+    current = n;
+    srcEl.value = SAMPLES[n];
+    $("src-name").textContent = "samples/" + n + ".dasdl";
+    Array.prototype.forEach.call($("samples").children, function (c) {
+      c.setAttribute("aria-pressed", String(c.textContent === n));
+    });
+    reset();
+  }
+
+  function reset() {
+    results = { sql: "", json: "", log: "" };
+    last = { state: "idle", stats: [], ms: null };
+    redraw();
+  }
+
+  /* Everything the language can change, drawn from `last` and `results`. */
+  function redraw() {
+    $("status").dataset.state = last.state;
+    $("verdict").textContent =
+      last.state === "ok" ? T.ok :
+      last.state === "error" ? (/SYNTAX ERRORS/.test(results.log) ? T.syntax : T.nothing) :
+      T.idle;
+    $("timing").textContent = last.ms === null ? "" : last.ms.toFixed(0) + " ms";
+
+    var box = $("stats");
+    while (box.firstChild) box.removeChild(box.firstChild);
+    last.stats.forEach(function (pair) {
+      var forms = T.units[pair[1]] || [pair[1], pair[1] + "s"];
+      var el = document.createElement("span");
+      el.className = "stat";
+      var b = document.createElement("b");
+      b.textContent = pair[0];
+      el.appendChild(b);
+      el.appendChild(document.createTextNode(" " + forms[pair[0] === "1" ? 0 : 1]));
+      box.appendChild(el);
+    });
+
+    $("c-sql").textContent = results.sql ? T.lines(count(results.sql)) : "";
+    $("c-json").textContent = results.json ? T.lines(count(results.json)) : "";
+    $("copy").textContent = T.copy;
+    show();
+  }
+
+  /* ---- maintain toggle ---------------------------------------------- */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-maintain]"), function (b) {
+    b.addEventListener("click", function () {
+      maintain = b.dataset.maintain;
+      Array.prototype.forEach.call(document.querySelectorAll("[data-maintain]"), function (o) {
+        o.setAttribute("aria-pressed", String(o === b));
+      });
+    });
+  });
+
+  /* ---- tabs ---------------------------------------------------------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+    t.addEventListener("click", function () {
+      view = t.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (o) {
+        o.setAttribute("aria-selected", String(o === t));
+      });
+      show();
+    });
+  });
+
+  function show() {
+    var text = results[view];
+    if (text) { outEl.textContent = text; outEl.classList.remove("empty"); }
+    else {
+      outEl.classList.add("empty");
+      outEl.textContent = last.state === "idle" ? T.pressRun
+        : view === "log" ? T.noLog : T.noOutput;
+    }
+  }
+
+  $("copy").addEventListener("click", function () {
+    var t = results[view];
+    if (!t) return;
+    navigator.clipboard.writeText(t).then(function () {
+      var b = $("copy"); b.textContent = T.copied; setTimeout(function () { b.textContent = T.copy; }, 1400);
+    }, function () {});
+  });
+
+  /* ---- the compiler --------------------------------------------------
+     A fresh module per run: the program keeps the model and its options in
+     globals, so a second main() in the same instance would start with the
+     leftovers of the first.                                              */
+  function compile() {
+    runEl.disabled = true;
+    runEl.querySelector("[data-i18n]").textContent = T.compiling;
+    var log = [];
+    var name = current, path = "samples/" + name + ".dasdl";
+    var t0 = performance.now();
+
+    createDasdl({
+      print: function (s) { log.push(s); },
+      printErr: function (s) { log.push(s); }
+    }).then(function (M) {
+      try { M.FS.mkdir("/samples"); } catch (e) { /* already there */ }
+      M.FS.writeFile("/" + path, srcEl.value);
+      var args = ["-s", path, "-o", "/" + name];
+      if (maintain === "runtime") args.push("--maintain=runtime");
+
+      var rc = 0;
+      try { rc = M.callMain(args); } catch (e) { log.push(String(e && e.message || e)); rc = -1; }
+      var ms = performance.now() - t0;
+
+      var read = function (p) {
+        try { return M.FS.readFile(p, { encoding: "utf8" }); } catch (e) { return ""; }
+      };
+      results.json = read("/" + name + ".model.json");
+      results.sql = read("/" + name + ".sql");
+      results.log = log.join("\n");
+      finish(rc, ms);
+    }).catch(function (e) {
+      results.log = String(e && e.message || e);
+      finish(-1, performance.now() - t0);
+    });
+  }
+
+  function finish(rc, ms) {
+    runEl.disabled = false;
+    runEl.querySelector("[data-i18n]").textContent = T.compile;
+    var ok = !!results.sql || !!results.json;
+    last = { state: ok ? "ok" : "error", stats: [], ms: ms };
+
+    if (ok) {
+      /* The counts come out of the program's own summary line; the unit is
+         kept as the program spelled it and translated at draw time. */
+      var m = /Structures:\s*(.+)$/m.exec(results.log);
+      if (m) {
+        m[1].split(",").forEach(function (part) {
+          var mm = /^\s*(\d+)\s+(.+?)\(s\)\s*$/.exec(part);
+          if (mm) last.stats.push([mm[1], mm[2].trim()]);
+        });
+      }
+      if (view === "log") view = "sql";
+    } else {
+      view = "log";
+    }
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (o) {
+      o.setAttribute("aria-selected", String(o.dataset.tab === view));
+    });
+    redraw();
+  }
+
+  function count(t) { return t ? t.split("\n").length - 1 : 0; }
+
+  each("[data-lang]", function (b) {
+    b.addEventListener("click", function () { applyLang(b.dataset.lang); });
+  });
+
+  runEl.addEventListener("click", compile);
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); compile(); }
+  });
+
+  load(current);
+  applyLang(lang);
+}());
+</script>

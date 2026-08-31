@@ -1,6 +1,7 @@
-# Build output: the binary, and what compiling a description writes.
-build/dasdl
-build/*.model.json
-build/*.sql
+# Generated in full and safe to delete: build/ is the binary, out/ is what
+# compiling a description writes.
+build/
+out/
+
 *.o
 .DS_Store

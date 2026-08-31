@@ -1,0 +1,79 @@
+# Build the browser page and publish it to GitHub Pages.
+#
+# Emscripten is installed here rather than pulled in as a third-party action:
+# this repository asks its readers to check what it runs, so its own workflow
+# should not ask them to trust a step they cannot read. The version is pinned
+# for the same reason a generated parser is committed — the page a visitor gets
+# should be reproducible from what is here.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time, and never cancel one half-done.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  EMSDK_VERSION: 6.0.8
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache the Emscripten SDK
+        id: emsdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}
+
+      - name: Install the Emscripten SDK
+        if: steps.emsdk-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+          cd ~/emsdk
+          ./emsdk install "$EMSDK_VERSION"
+          ./emsdk activate "$EMSDK_VERSION"
+
+      - name: Build the page
+        run: |
+          . ~/emsdk/emsdk_env.sh
+          em++ --version | head -1
+          make site
+
+      # The page promises it fetches nothing. A promise worth making in the
+      # README is worth failing the build over.
+      - name: Check the page fetches nothing
+        run: |
+          if grep -qE 'https?://' build/site/index.html; then
+            echo "build/site/index.html carries an external URL:" >&2
+            grep -oE 'https?://[^"'"'"' )]+' build/site/index.html | sort -u >&2
+            exit 1
+          fi
+          echo "no external URLs — the page is self-contained"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

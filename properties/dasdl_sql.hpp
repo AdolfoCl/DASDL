@@ -1048,7 +1048,7 @@ private:
         std::vector<std::string> indented;
         for (const std::string& s : select) indented.push_back("         " + s);
         emit(join(indented, ",\n"));
-        emit("    FROM " + quoted(base));
+        emit("    FROM " + dasdl_sql::quoted(base));
         if (!node.selectText.empty()) {
             std::optional<std::string> where = translate(node.selectText, table);
             if (!where)
