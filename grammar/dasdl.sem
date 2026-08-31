@@ -4,7 +4,7 @@
 % A comment written above a block explains that block and travels with it.
 %
 
- GENERAL SECTION:
+ DIRECTIVES:
 
      TOKENS   :    BADTOK    "<INVALID TOKEN>"
                   ,IDNTOK    "<IDENTIFIER>"

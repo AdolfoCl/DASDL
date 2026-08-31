@@ -1,6 +1,6 @@
 % DASDL grammar — syntax only.
 %
-% The semantic blocks and the GENERAL SECTION live in dasdl.sem, so that what
+% The semantic blocks and the DIRECTIVES block live in dasdl.sem, so that what
 % is left here is the language and nothing else. Trackway reads the two as one
 % file; recombining them happens outside this repository.
 %
