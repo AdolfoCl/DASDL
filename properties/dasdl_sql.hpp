@@ -23,9 +23,10 @@
 // How DMSII maps onto a relational schema
 // ---------------------------------------
 //   * A **data set** becomes a table. DMSII records have no key of their own —
-//     a program reaches a record through a set, or by its address — so every
-//     table carries `rsn`, an autoincrementing surrogate standing in for the
-//     record serial number DMSII addresses records by.
+//     a program reaches a record through a set, or by its address, the AAWORD,
+//     which encodes the block and the offset within it — so every table carries
+//     `rsn`, an autoincrementing surrogate that stays put when the record does
+//     not.
 //   * An **embedded data set** (one declared inside another's record) becomes
 //     its own table with `parent_rsn` referencing the owner, deleted with it:
 //     an embedded record cannot outlive the record that holds it.
@@ -392,9 +393,11 @@ private:
         emit("-- MariaDB schema for the Enterprise Database Server database " + db_.name);
         emit("-- Compiled from " + db_.source + " by DASDL.");
         emit("--");
-        emit("-- Every table carries `rsn`: DMSII addresses a record by its");
-        emit("-- record serial number, and a relational row needs a key of");
-        emit("-- its own for the sets that reach it to point at something.");
+        emit("-- Every table carries `rsn`, a key of its own. DMSII addresses");
+        emit("-- a record by its physical address — the AAWORD, which encodes");
+        emit("-- the block and the offset within it — and a relational row");
+        emit("-- needs a key that does not move when the record does, for the");
+        emit("-- sets that reach it to point at something.");
         emit("--");
         emit("-- A set is an index over its data set; a subset is a table of");
         emit("-- its own, because it holds entries for only some of the");
