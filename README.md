@@ -93,8 +93,11 @@ both.
 ## Or install nothing at all
 
 **[Run it in your browser](https://adolfocl.github.io/DASDL/)** — the compiler
-itself, not a recording of it. Pick a description or paste your own, in English
-or Spanish, and read out the model and the schema.
+itself, not a recording of it, in English or Spanish. Pick one of the manual's
+descriptions and change it, start from a blank sheet, or open a `.dasdl` file
+off your own disk; the file is read in the tab and goes nowhere. Breaking a
+description on purpose is a fair way to see what the grammar knows: it answers
+with the line, the column and what it expected.
 
 `make web` compiles the same C++ to WebAssembly and writes
 `build/web/dasdl.html`: one self-contained file that runs the compiler in a

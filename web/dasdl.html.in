@@ -79,6 +79,11 @@
   }
   .chip:hover { color:var(--ink); border-color:var(--accent); }
   .chip[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:600; }
+  .chip.blank { font-style:italic; }
+  .chip.open { font-family:var(--sans); font-size:12.5px; font-style:normal; }
+  .chip.open::before { content:"\2191"; margin-right:6px; opacity:.7; }
+  .hint { margin:0 0 18px; color:var(--muted); font-size:13.5px; max-width:88ch; }
+  .hint b { color:var(--ink); font-weight:600; }
   .seg { display:flex; border:1px solid var(--rule); border-radius:3px; overflow:hidden; }
   .seg button {
     font:inherit; font-size:13px; padding:5px 12px; cursor:pointer;
@@ -195,6 +200,9 @@
     </div>
     <button class="run" id="run" type="button"><span data-i18n="compile"></span><kbd>Ctrl+&#9166;</kbd></button>
   </div>
+  <input type="file" id="file" accept=".dasdl,.das,.das_m,text/plain" hidden>
+
+  <p class="hint" data-i18n-html="hint"></p>
 
   <div class="panes">
     <section class="pane">
@@ -259,6 +267,12 @@
       tabSchema: "Schema", tabModel: "Model", tabConsole: "Console",
       copy: "Copy", copied: "Copied",
       srcLabel: "DASDL database description",
+      blank: "Blank", openFile: "Open a file",
+      hint: "<b>Change anything and compile again.</b> A description that does not parse " +
+            "names the line, the column and what it expected, so breaking one on purpose " +
+            "is a fair way to see what the grammar knows. Start from <i>Blank</i> to write " +
+            "your own, or open a <code>.dasdl</code> file &mdash; it is read here in the " +
+            "tab and goes nowhere.",
       idle: "Not compiled yet", ok: "Compiled",
       syntax: "The description did not compile", nothing: "The run produced nothing",
       pressRun: "Press Compile.", noLog: "No console output yet.",
@@ -295,6 +309,13 @@
       tabSchema: "Esquema", tabModel: "Modelo", tabConsole: "Consola",
       copy: "Copiar", copied: "Copiado",
       srcLabel: "Descripci\u00f3n de base de datos DASDL",
+      blank: "En blanco", openFile: "Abrir un archivo",
+      hint: "<b>Cambia lo que quieras y vuelve a compilar.</b> Una descripci\u00f3n que no " +
+            "calza nombra la l\u00ednea, la columna y qu\u00e9 esperaba, as\u00ed que " +
+            "romper una a prop\u00f3sito es una buena forma de ver qu\u00e9 sabe la " +
+            "gram\u00e1tica. Parte <i>En blanco</i> para escribir la tuya, o abre un " +
+            "archivo <code>.dasdl</code>: se lee aqu\u00ed en la pesta\u00f1a y no va a " +
+            "ninguna parte.",
       idle: "Sin compilar todav\u00eda", ok: "Compilada",
       syntax: "La descripci\u00f3n no compil\u00f3", nothing: "La ejecuci\u00f3n no produjo nada",
       pressRun: "Pulsa Compilar.", noLog: "Todav\u00eda no hay salida de consola.",
@@ -352,6 +373,10 @@
 
   var names = Object.keys(SAMPLES);
   var current = names[0];
+  /* Where the description came from: a sample, a blank sheet, or a file the
+     reader opened. The name matters — a DASDL source does not name the
+     database it describes, so the compiler takes it from the file name. */
+  var origin = "sample";
   var maintain = "triggers";
   var results = { sql: "", json: "", log: "" };
   var view = "sql";
@@ -362,23 +387,72 @@
   var $ = function (id) { return document.getElementById(id); };
   var srcEl = $("src"), outEl = $("out"), runEl = $("run");
 
-  /* ---- samples ------------------------------------------------------ */
+  /* ---- where the description comes from ----------------------------- */
   names.forEach(function (n) {
     var b = document.createElement("button");
-    b.type = "button"; b.className = "chip"; b.textContent = n;
-    b.setAttribute("aria-pressed", String(n === current));
+    b.type = "button"; b.className = "chip"; b.dataset.sample = n; b.textContent = n;
     b.addEventListener("click", function () { load(n); });
     $("samples").appendChild(b);
   });
 
+  var blankBtn = document.createElement("button");
+  blankBtn.type = "button"; blankBtn.className = "chip blank";
+  blankBtn.dataset.i18n = "blank";
+  blankBtn.addEventListener("click", loadBlank);
+  $("samples").appendChild(blankBtn);
+
+  var openBtn = document.createElement("button");
+  openBtn.type = "button"; openBtn.className = "chip open";
+  openBtn.dataset.i18n = "openFile";
+  openBtn.addEventListener("click", function () { $("file").click(); });
+  $("samples").appendChild(openBtn);
+
+  $("file").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      current = baseName(f.name);
+      origin = "file";
+      srcEl.value = String(r.result);
+      mark(); reset();
+    };
+    r.readAsText(f);          /* read here, in this tab; nothing is sent */
+    this.value = "";
+  });
+
+  function baseName(n) {
+    return n.replace(/\.[^.]*$/, "").replace(/^.*[\\/]/, "") || "untitled";
+  }
+
   function load(n) {
-    current = n;
+    current = n; origin = "sample";
     srcEl.value = SAMPLES[n];
-    $("src-name").textContent = "samples/" + n + ".dasdl";
+    mark(); reset();
+  }
+
+  function loadBlank() {
+    current = "untitled"; origin = "blank";
+    srcEl.value = "";
+    mark(); reset();
+    srcEl.focus();
+  }
+
+  /* Which chip is lit, and what the pane calls the file. */
+  function mark() {
     Array.prototype.forEach.call($("samples").children, function (c) {
-      c.setAttribute("aria-pressed", String(c.textContent === n));
+      var on = origin === "sample" ? c.dataset.sample === current
+             : origin === "blank" ? c === blankBtn : false;
+      c.setAttribute("aria-pressed", String(on));
     });
-    reset();
+    $("src-name").textContent = virtualPath();
+  }
+
+  /* The path the compiler is given is the path it records in both outputs, so
+     a sample keeps the one it has in the repository and anything else stands
+     on its own. */
+  function virtualPath() {
+    return (origin === "sample" ? "samples/" : "") + current + ".dasdl";
   }
 
   function reset() {
@@ -462,14 +536,16 @@
     runEl.disabled = true;
     runEl.querySelector("[data-i18n]").textContent = T.compiling;
     var log = [];
-    var name = current, path = "samples/" + name + ".dasdl";
+    var name = current, path = virtualPath();
     var t0 = performance.now();
 
     createDasdl({
       print: function (s) { log.push(s); },
       printErr: function (s) { log.push(s); }
     }).then(function (M) {
-      try { M.FS.mkdir("/samples"); } catch (e) { /* already there */ }
+      if (path.indexOf("/") !== -1) {
+        try { M.FS.mkdir("/samples"); } catch (e) { /* already there */ }
+      }
       M.FS.writeFile("/" + path, srcEl.value);
       var args = ["-s", path, "-o", "/" + name];
       if (maintain === "runtime") args.push("--maintain=runtime");
