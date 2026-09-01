@@ -22,6 +22,7 @@ WEBDIR  := build/web
 # and will not link libc++), and Emscripten is itself a Python program, so
 # asking for python3 here costs nothing that em++ has not already asked for.
 EMXX    ?= em++
+EMSDK_VERSION ?= 6.0.8
 PYTHON  ?= python3
 SAMPLES := $(wildcard samples/*.dasdl)
 
@@ -68,6 +69,14 @@ web: $(WEBDIR)/dasdl.html
 	@echo "$(WEBDIR)/dasdl.html ready ($$(du -h $(WEBDIR)/dasdl.html | cut -f1)) — open it in a browser"
 
 $(WEBDIR)/dasdl.js: $(SRC) properties/properties.hpp properties/dasdl_model.hpp properties/dasdl_sql.hpp
+	@command -v $(EMXX) >/dev/null 2>&1 || { \
+	    echo "$(EMXX) not found. It builds the browser page and nothing else;"; \
+	    echo "make build and make compile do not need it. To install:"; \
+	    echo "    git clone https://github.com/emscripten-core/emsdk.git ~/emsdk"; \
+	    echo "    ~/emsdk/emsdk install $(EMSDK_VERSION)"; \
+	    echo "    ~/emsdk/emsdk activate $(EMSDK_VERSION)"; \
+	    echo "    source ~/emsdk/emsdk_env.sh   # this shell only; a new terminal needs it again"; \
+	    exit 1; }
 	@mkdir -p $(WEBDIR)
 	$(EMXX) $(CXXFLAGS) $(SRC) -o $@ \
 	    -sSINGLE_FILE=1 -sMODULARIZE=1 -sEXPORT_NAME=createDasdl \

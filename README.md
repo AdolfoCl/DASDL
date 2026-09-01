@@ -108,9 +108,25 @@ nothing for it to send anywhere, and no server to send it to.
 Same program, same answers: the WebAssembly build's output is byte-for-byte
 identical to the `g++` build's on all eight samples.
 
-That target is the only thing in this repository that wants more than a C++
-compiler; it needs Emscripten's `em++` on your PATH. Note `em++` and not
-`emcc` — `emcc` is the C driver and will not link the C++ library.
+That target is the only thing here that wants more than a C++ compiler. It
+needs Emscripten, which is not packaged by any distribution worth using and is
+installed from its own SDK:
+
+```
+git clone https://github.com/emscripten-core/emsdk.git ~/emsdk
+~/emsdk/emsdk install 6.0.8
+~/emsdk/emsdk activate 6.0.8
+source ~/emsdk/emsdk_env.sh
+```
+
+That last line puts `em++` on the PATH **of that shell and no other**, so a new
+terminal needs it again — which is the usual reason `make web` suddenly cannot
+find the compiler it found yesterday. It is about 1.7 GB, and none of it is
+needed to build or run the compiler itself.
+
+Note `em++` and not `emcc`. `emcc` is the C driver: it compiles the C++ and
+then fails at the link step with undefined `std::` symbols, which does not look
+like the mistake it is.
 
 ## Two files, one grammar
 
