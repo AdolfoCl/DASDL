@@ -25,6 +25,10 @@ EMXX    ?= em++
 PYTHON  ?= python3
 SAMPLES := $(wildcard samples/*.dasdl)
 
+# build, web and site each name something that also exists on disk — the
+# build/ directory, the web/ directory, a site to publish. Without .PHONY make
+# would call the target up to date because the directory is there, and do
+# nothing, for ever, without saying why.
 .PHONY: help build compile web site clean
 .DEFAULT_GOAL := help
 
@@ -58,7 +62,10 @@ compile: $(BIN)
 
 # The same compiler, for a reader with no toolchain: one self-contained HTML
 # file with the WebAssembly build inlined, which fetches nothing when opened.
+# Like build: a recipe of its own, so an up-to-date page says where it is
+# instead of answering "Nothing to be done for 'web'".
 web: $(WEBDIR)/dasdl.html
+	@echo "$(WEBDIR)/dasdl.html ready ($$(du -h $(WEBDIR)/dasdl.html | cut -f1)) — open it in a browser"
 
 $(WEBDIR)/dasdl.js: $(SRC) properties/properties.hpp properties/dasdl_model.hpp properties/dasdl_sql.hpp
 	@mkdir -p $(WEBDIR)
